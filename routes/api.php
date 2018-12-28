@@ -42,6 +42,10 @@ Route::group(['middleware' => ['GearOilAuthApi']], function () {
         'members' => 'MemberController',
     ]);
 
+    //find memberId in this server against firebaseId
+    Route::get('/find-member-id', 'UserController@findMemberId')->name('user.findMemberId');
+
+
 });
 
 

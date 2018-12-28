@@ -12,7 +12,7 @@ use App\Member;
 use App\All_token;
 use App\Api_log;
 use Auth;
-
+use Validator;
 
 class UserController extends Controller
 {
@@ -389,6 +389,79 @@ class UserController extends Controller
     return $response;
   }
 
+    /** valid user or not */
+    public function validUser($id)
+    {
+        $memQry = DB::table('members')
+                  ->select('member_id')
+                  ->where('member_id', $id)
+                  ->count();
+        // print_r($memQry);    
+        
+        if ($memQry > 0) 
+        {
+            return true;
+        } 
+        else 
+        {
+            return false;
+        }
+        
+    }
+
+    public function findMemberId(Request $request)
+    {
+       $fbId = $request->firebase_id;
+
+        $validator = Validator::make($request->all(), [
+          'firebase_id' => 'required | max:100',
+        ]);
+
+        if($validator->fails())
+        {
+            $data['status'] = '400';
+            $data['message'] = "invalid input found, pass the data with desire format";
+            $data['data'] =  $validator->errors();
+        }
+        else 
+        {
+            $fmq = DB::table('members')->select('member_id')->where('firebase_id', $fbId)->first();
+
+            if ( count($fmq) > 0 ) 
+            {         
+              $data['status'] = 200;
+              $data['message'] = "user found";
+              $data['member_id'] = $fmq->member_id;
+            } 
+            else 
+            {
+              $data['status'] = 400;
+              $data['message'] = "user not found";
+            }        
+         }
+            
+
+      //................insert details to Api_log starts......................................
+        $params = array(
+                       'firebase_id' => $fbId,
+                      );
+
+        $requestDetails = url()->current()."?".http_build_query($params);
+        $responseDetails = response()->json($data);
+        $apiName = "findMemberId";
+        $apiReqType = "GET";
+        $clientIp =  $request->ip();
+        $currentUrl = $request->url();
+
+        $this->insertApiLog($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl);
+
+      //................insert details to Api_log ends......................................
+
+
+
+       $response = json_encode($data, JSON_PRETTY_PRINT); 
+       return $response;      
+    }
 
 
 }
