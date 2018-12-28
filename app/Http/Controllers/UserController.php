@@ -493,32 +493,115 @@ class UserController extends Controller
 
 
 
-
-  //...............................................Service Delete..........................................................................................................................
-  // http://localhost:8000/api/service-delete/58
-  public function deleteService(Request $req)
+//...............................................Service Delete..........................................................................................................................
+  // http://localhost:8000/api/service-delete
+  public function deleteService(Request $request)
   {
-    $id = $request->id;
 
-    $delete = DB::table('temporary_user_services')
-                    ->where('temporary_user_services_id', '=', $id)
-                    ->delete();
+    $serviceId = $request->serviceId;
+    $memberId = $request->memberId;
 
-    if ($delete == 1)
+    $validator = Validator::make($request->all(), [
+        'memberId' => 'required | max:30| min:1',
+        'serviceId' => 'required | max:30| min:1',
+    ]);
+
+    if($validator->fails())
     {
-      $data['status'] = 200;
-      $data['message'] = "service deleted successfully";
+        $data['status'] = '400';
+        $data['message'] = "invalid input found, pass the data with desire format";
+        $data['data'] =  $validator->errors();
     }
-    else
+    else 
     {
-      $data['status'] = 400;
-      $data['message'] = "service not deleted, please try again";
+      $validUser = $this->validUser($memberId);
+      
+      if ($validUser == true) 
+      {
+        $validServiceId = DB::table('temporary_user_services')
+                  ->where('temporary_user_services_id','=',$serviceId)
+                  ->get();
+
+        $validServiceIdCount = count($validServiceId);            
+        if ($validServiceIdCount > 0) 
+        {
+          $serviceData = DB::table('temporary_user_services')
+                        ->where('temporary_user_services_id','=',$serviceId)
+                        ->get();
+
+          foreach ($serviceData as $key)
+          {
+            $perviousServiceAmount = $key->service_amount;
+          }
+
+          $userYearlyExpenditureMember = Member::where('member_id', $memberId)->get();
+          foreach ($userYearlyExpenditureMember as $key)
+          {
+            $yearlyCost = $key->user_yearly_expenditure;
+          }
+
+          $newAmountYearly = $yearlyCost - $perviousServiceAmount;
+
+          $delete = DB::table('temporary_user_services')
+                  ->where('temporary_user_services_id', '=', $serviceId)
+                  ->delete();
+
+          //update memberTable
+            $umt = DB::table('members')
+                            ->where('member_id','=',$memberId)
+                            ->update(['user_yearly_expenditure' => $newAmountYearly]);
+    
+
+          if ($delete == 1)
+          {
+            $data['status'] = 200;
+            $data['message'] = "service deleted successfully";
+          }
+          else
+          {
+            $data['status'] = 500;
+            $data['message'] = "service not deleted, please try again";
+          }
+        }
+        else
+        {
+            $data['status'] = 400;
+            $data['message'] = "wrong service id provided";
+        }
+      } 
+      else 
+      {
+        $data['status'] = 400;
+        $data['message'] = "user not found";      
+      }      
     }
+
+
+      //................insert details to Api_log starts......................................
+
+            $params = array(
+                          'serviceId' => $serviceId,
+                          'memberId' => $memberId,
+                        );
+
+            $requestDetails = url()->current()."?".http_build_query($params);
+            $responseDetails = response()->json($data);
+            $apiName = "deleteService";
+            $apiReqType = "POST";
+            $clientIp =  $request->ip();
+            $currentUrl = $request->url();
+
+            $this->insertApiLog($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl);
+
+      //................insert details to Api_log ends......................................
 
     $response = json_encode($data, JSON_PRETTY_PRINT);
-
     return $response;
   }
+//...............................................Service Delete Ends..........................................................................................................................
+
+
+
 
     /** valid user or not */
     public function validUser($id)
