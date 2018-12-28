@@ -200,14 +200,14 @@ class UserController extends Controller
           }
           else
           {
-            $data['status'] = "300";
+            $data['status'] = "400";
             $data['message'] = "user service cost insertion failed";
           }
 
         }
         else //if input invalid
         {
-          $data['status'] = "300";
+          $data['status'] = "400";
           $data['message'] = "insufficient input";
         }
 
@@ -259,14 +259,14 @@ class UserController extends Controller
           }
           else
           {
-            $data['status'] = "300";
+            $data['status'] = "400";
             $data['message'] = "user service cost insertion failed";
           }
 
         }
         else //if input invalid
         {
-          $data['status'] = "300";
+          $data['status'] = "400";
           $data['message'] = "insufficient input";
         }
       }
