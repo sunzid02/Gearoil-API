@@ -143,133 +143,192 @@ class UserController extends Controller
 /*.................................User Servicing insertion...............................................................................*/
 
 // http://localhost:8000/api/user-servicing-cost?memberId=1&shopName=dulal&serviceName=Full&serviceAmount=500&shopRatingByUser=5&shopReviewByUser=CHOLE AR KI&serviceTime=2018-09-13 18:41:45&shopLocation=kollanpur
-    public function servicingCost(Request $req)
+    public function servicingCost(Request $request)
     {
-      $shopAlreadyExist = $req->shopName;
-      $shopAlreadyExistQuery = DB::table('shops')
-                ->where('shop_name', 'like', "%{$shopAlreadyExist}%")
-                ->get();
+      
+      $shopAlreadyExist = $request->shopName;
+      $memberId = $request->memberId;
+      $shopName = $request->shopName;
+      $serviceName = $request->serviceName;
+      $serviceAmount = $request->serviceAmount;
 
-      $shopAlreadyExistrow = count($shopAlreadyExistQuery);
-      $memberId = $req->memberId;
-      $shopName = $req->shopName;
-      $serviceName = $req->serviceName;
-      $serviceAmount = $req->serviceAmount;
-      $shopRating = $req->shopRatingByUser;
-      $shopReviewByUser = $req->shopReviewByUser;
-      $serviceTime = $req->serviceTime;
-      $shopLocation = $req->shopLocation;
+      $shopReviewByUser = $request->shopReviewByUser;
+      $serviceTime = $request->serviceTime;
+      $shopLocation = $request->shopLocation;
+      $shopRating = $request->shopRatingByUser;
 
-      if ($shopAlreadyExistrow > 0)//if shop already  exist in shop table
+      $validator = Validator::make($request->all(), [
+          'memberId' => 'required | max:30| min:1',
+          'shopName' => 'max:30 | required | min: 2',
+          'serviceName' => 'max:90 | required',
+          'serviceAmount' => ['required', 'regex:/^[1-9][0-9]+|not_in:0/', 'max:5', 'min:2'],
+          'shopRatingByUser' => ['required','max:5', 'min:1'],
+          'shopReviewByUser' => 'max:250 | required',
+          'serviceTime' => 'max:30 | required| date',
+          'shopLocation' => 'max:100 | required| min: 3',
+      ]);
+
+      if($validator->fails())
       {
-        if ($memberId != " " && $memberId !=null
-        && $shopName != " " && $shopName !=null
-        && $serviceName != " " && $serviceName !=null
-        && $serviceAmount != " " && $serviceAmount !=null
-        && $shopRating != " "&& $shopRating !=null
-        && $serviceTime != " " && $serviceTime !=null
-        && $shopLocation != " " && $shopLocation !=null
-        && $shopReviewByUser != " " && $shopReviewByUser !=null)//if all params are ok
-        {
-          $tus = new Temporary_user_service();
-          $tus->member_id = $memberId;
-          $tus->shop_name = $shopName;
-          $tus->service_name = $serviceName;
-          $tus->service_amount = $serviceAmount;
-          $tus->shop_rating_by_user = $shopRating;
-          $tus->shop_review_by_user = $shopReviewByUser;
-          $tus->service_date_time = $serviceTime;
-          $tus->shop_location = $shopLocation;
-
-          $tusInsertion = $tus->save();
-          if ($tusInsertion == 1)//if insertion is successfull
-          {
-            $memberFinding = Member::where('member_id', $memberId)->first();
-            $userYearlyCost =  $memberFinding->user_yearly_expenditure;
-            $totalServicingCost = $serviceAmount + $userYearlyCost;
-
-            //updating total yearly cost
-            DB::table('members')
-            ->where('member_id', $memberId)
-            ->update(['user_yearly_expenditure' => $totalServicingCost]);
-
-            $data['status'] = "200";
-            $data['message'] = "user service insertion cost successfull";
-
-
-          }
-          else
-          {
-            $data['status'] = "400";
-            $data['message'] = "user service cost insertion failed";
-          }
-
-        }
-        else //if input invalid
-        {
-          $data['status'] = "400";
-          $data['message'] = "insufficient input";
-        }
-
+          $data['status'] = '400';
+          $data['message'] = "invalid input found, pass the data with desire format";
+          $data['data'] =  $validator->errors();
       }
-      else//if shop DOESNT not exist in shop table
+      else 
       {
-        if ($memberId != " " && $memberId !=null
-        && $shopName != " " && $shopName !=null
-        && $serviceName != " " && $serviceName !=null
-        && $serviceAmount != " " && $serviceAmount !=null
-        && $shopRating != " "&& $shopRating !=null
-        && $serviceTime != " " && $serviceTime !=null
-        && $shopLocation != " " && $shopLocation !=null
-        && $shopReviewByUser != " " && $shopReviewByUser !=null)//if all params are ok
+        $validUser = $this->validUser($memberId);
+
+        if ($validUser == true) // jodi user valid hoy
         {
-          $tus = new Temporary_user_service();
-          $tus->member_id = $memberId;
-          $tus->shop_name = $shopName;
-          $tus->service_name = $serviceName;
-          $tus->service_amount = $serviceAmount;
-          $tus->shop_rating_by_user = $shopRating;
-          $tus->shop_review_by_user = $shopReviewByUser;
-          $tus->service_date_time = $serviceTime;
-          $tus->shop_location = $shopLocation;
-          $tusInsertion = $tus->save();
+          $shopAlreadyExistQuery = DB::table('shops')
+                                    ->where('shop_name', 'like', "%{$shopAlreadyExist}%")
+                                    ->get();
 
-          $shop = new Shop();
-          $shop['shop_name'] = $shopName;
-          $shop['location'] = $shopLocation;
-          $shop['rating'] = $shopRating;
-
-          $shopInsertion = $shop->save();
-
-
-          if ($tusInsertion == 1 && $shopInsertion == 1)//if insertion is successfull
+          $shopAlreadyExistrow = count($shopAlreadyExistQuery);
+              
+          if ($shopAlreadyExistrow > 0)//if shop already  exist in shop table
           {
-            $memberFinding = Member::where('member_id', $memberId)->first();
-            $userYearlyCost =  $memberFinding->user_yearly_expenditure;
-            $totalServicingCost = $serviceAmount + $userYearlyCost;
+            if ($memberId != " " && $memberId !=null
+            && $shopName != " " && $shopName !=null
+            && $serviceName != " " && $serviceName !=null
+            && $serviceAmount != " " && $serviceAmount !=null
+            && $shopRating != " "&& $shopRating !=null
+            && $serviceTime != " " && $serviceTime !=null
+            && $shopLocation != " " && $shopLocation !=null
+            && $shopReviewByUser != " " && $shopReviewByUser !=null)//if all params are ok
+            {
+              $tus = new Temporary_user_service();
+              $tus->member_id = $memberId;
+              $tus->shop_name = $shopName;
+              $tus->service_name = $serviceName;
+              $tus->service_amount = $serviceAmount;
+              $tus->shop_rating_by_user = $shopRating;
+              $tus->shop_review_by_user = $shopReviewByUser;
+              $tus->service_date_time = $serviceTime;
+              $tus->shop_location = $shopLocation;
 
-            //updating total yearly cost
-            DB::table('members')
-            ->where('member_id', $memberId)
-            ->update(['user_yearly_expenditure' => $totalServicingCost]);
+              $tusInsertion = $tus->save();
+              if ($tusInsertion == 1)//if insertion is successfull
+              {
+                $memberFinding = Member::where('member_id', $memberId)->first();
+                $userYearlyCost =  $memberFinding->user_yearly_expenditure;
+                $totalServicingCost = $serviceAmount + $userYearlyCost;
 
-            $data['status'] = "200";
-            $data['message'] = "user service insertion cost successfull both tables";
+                //updating total yearly cost
+                DB::table('members')
+                ->where('member_id', $memberId)
+                ->update(['user_yearly_expenditure' => $totalServicingCost]);
+
+                $data['status'] = "200";
+                $data['message'] = "user service insertion cost successfull";
+
+
+              }
+              else
+              {
+                $data['status'] = "400";
+                $data['message'] = "user service cost insertion failed";
+              }
+
+            }
+            else //if input invalid
+            {
+              $data['status'] = "400";
+              $data['message'] = "insufficient input";
+            }
 
           }
-          else
+          else//if shop DOESNT not exist in shop table
           {
-            $data['status'] = "400";
-            $data['message'] = "user service cost insertion failed";
+            if ($memberId != " " && $memberId !=null
+            && $shopName != " " && $shopName !=null
+            && $serviceName != " " && $serviceName !=null
+            && $serviceAmount != " " && $serviceAmount !=null
+            && $shopRating != " "&& $shopRating !=null
+            && $serviceTime != " " && $serviceTime !=null
+            && $shopLocation != " " && $shopLocation !=null
+            && $shopReviewByUser != " " && $shopReviewByUser !=null)//if all params are ok
+            {
+              $tus = new Temporary_user_service();
+              $tus->member_id = $memberId;
+              $tus->shop_name = $shopName;
+              $tus->service_name = $serviceName;
+              $tus->service_amount = $serviceAmount;
+              $tus->shop_rating_by_user = $shopRating;
+              $tus->shop_review_by_user = $shopReviewByUser;
+              $tus->service_date_time = $serviceTime;
+              $tus->shop_location = $shopLocation;
+              $tusInsertion = $tus->save();
+
+              $shop = new Shop();
+              $shop['shop_name'] = $shopName;
+              $shop['location'] = $shopLocation;
+
+              $shopInsertion = $shop->save();
+
+
+              if ($tusInsertion == 1 && $shopInsertion == 1)//if insertion is successfull
+              {
+                $memberFinding = Member::where('member_id', $memberId)->first();
+                $userYearlyCost =  $memberFinding->user_yearly_expenditure;
+                $totalServicingCost = $serviceAmount + $userYearlyCost;
+
+                //updating total yearly cost
+                DB::table('members')
+                ->where('member_id', $memberId)
+                ->update(['user_yearly_expenditure' => $totalServicingCost]);
+
+                $data['status'] = "200";
+                $data['message'] = "user service insertion cost successfull both tables";
+
+              }
+              else
+              {
+                $data['status'] = "400";
+                $data['message'] = "user service cost insertion failed";
+              }
+
+            }
+            else //if input invalid
+            {
+              $data['status'] = "400";
+              $data['message'] = "insufficient input";
+            }
           }
 
         }
-        else //if input invalid
+        else 
         {
-          $data['status'] = "400";
-          $data['message'] = "insufficient input";
+          $data['status'] = '400';
+          $data['message'] = "user not found";
         }
+        
       }
+            
+        
+       //................insert details to Api_log starts......................................
+
+            $params = array(
+                        'memberId' => $memberId,
+                        'shopName' => $shopName,
+                        'serviceName' => $serviceName,
+                        'shopRatingByUser' => $shopRating,
+                        'shopReviewByUser' => $shopReviewByUser,
+                        'serviceTime' => $serviceTime,
+                        'shopLocation' => $shopLocation,
+                        );
+
+            $requestDetails = url()->current()."?".http_build_query($params);
+            $responseDetails = response()->json($data);
+            $apiName = "servicingCost";
+            $apiReqType = "POST";
+            $clientIp =  $request->ip();
+            $currentUrl = $request->url();
+
+            $this->insertApiLog($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl);
+
+      //................insert details to Api_log ends......................................
+
 
       $temporaryServiceresponse = json_encode($data, JSON_PRETTY_PRINT);
       return $temporaryServiceresponse;
@@ -279,17 +338,17 @@ class UserController extends Controller
 //...............................................Service Update..........................................................................................................................
 // http://localhost:8000/service-update/36?memberId=1&shopName=dulal&serviceName=Full&serviceAmount=500&shopRatingByUser=5&shopReviewByUser=CHOLE AR KI&serviceTime=2018-09-13 18:41:45&shopLocation=kollanpur
 
-  public function updateService(Request $req)
+  public function updateService(Request $request)
   {
-    $serviceId = $req->serviceId;
-    $memberId = $req->memberId;
-    $shopName = $req->shopName;
-    $serviceName = $req->serviceName;
-    $serviceAmount = $req->serviceAmount;
-    $shopRating = $req->shopRatingByUser;
-    $shopReviewByUser = $req->shopReviewByUser;
-    $serviceTime = $req->serviceTime;
-    $shopLocation = $req->shopLocation;
+    $serviceId = $request->serviceId;
+    $memberId = $request->memberId;
+    $shopName = $request->shopName;
+    $serviceName = $request->serviceName;
+    $serviceAmount = $request->serviceAmount;
+    $shopRating = $request->shopRatingByUser;
+    $shopReviewByUser = $request->shopReviewByUser;
+    $serviceTime = $request->serviceTime;
+    $shopLocation = $request->shopLocation;
 
     $serviceData = DB::table('temporary_user_services')
                             ->where('temporary_user_services_id','=',$serviceId)
@@ -367,7 +426,7 @@ class UserController extends Controller
   // http://localhost:8000/api/service-delete/58
   public function deleteService(Request $req)
   {
-    $id = $req->id;
+    $id = $request->id;
 
     $delete = DB::table('temporary_user_services')
                     ->where('temporary_user_services_id', '=', $id)
@@ -441,21 +500,21 @@ class UserController extends Controller
          }
             
 
-      //................insert details to Api_log starts......................................
-        $params = array(
-                       'firebase_id' => $fbId,
-                      );
+          //................insert details to Api_log starts......................................
+            $params = array(
+                          'firebase_id' => $fbId,
+                          );
 
-        $requestDetails = url()->current()."?".http_build_query($params);
-        $responseDetails = response()->json($data);
-        $apiName = "findMemberId";
-        $apiReqType = "GET";
-        $clientIp =  $request->ip();
-        $currentUrl = $request->url();
+            $requestDetails = url()->current()."?".http_build_query($params);
+            $responseDetails = response()->json($data);
+            $apiName = "findMemberId";
+            $apiReqType = "GET";
+            $clientIp =  $request->ip();
+            $currentUrl = $request->url();
 
-        $this->insertApiLog($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl);
+            $this->insertApiLog($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl);
 
-      //................insert details to Api_log ends......................................
+          //................insert details to Api_log ends......................................
 
 
 
