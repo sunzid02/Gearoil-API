@@ -46,49 +46,6 @@ class UserController extends Controller
       return true;
     }
 
-    public function matchToken($token)
-    {
-      if (!empty($token) || $token != '')
-      {
-        //matching token
-         $matchToken = DB::table('all_tokens')
-                  ->SELECT('token', 'create_time', 'end_time')
-                  ->from('all_tokens')
-                  ->where('token', $token)
-                  ->where('status', 1)
-                  ->get();
-
-         $matchTokenRow = count($matchToken);
-
-         if ($matchTokenRow > 0)
-         {
-           foreach ($matchToken as $key => $value)
-           {
-             $ct = $value->create_time;
-             $et = $value->end_time;
-           }
-
-           $data = array('status' => true,
-                          'ct' => $ct,
-                          'et' => $et,
-                        );
-           return $data;
-         }
-         else
-         {
-           $data = array('status' => false,
-
-                        );
-           return $data;
-         }
-      }
-      else
-      {
-        $data = array('status' => false,
-                     );
-        return $data;
-      }
-    }
 
 
     public function currentMonthCost(Request $request)

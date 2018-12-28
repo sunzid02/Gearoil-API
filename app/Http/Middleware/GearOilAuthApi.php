@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\All_token;
 use App\Api_log;
 use Auth;
-
+use DateTime;
 
 class GearOilAuthApi
 {
@@ -30,10 +30,11 @@ class GearOilAuthApi
 
         date_default_timezone_set('Asia/Dhaka');
         $currentDateTime =  date('Y-m-d h:i:s');
+
         // $this->timeValidity($matchTokenRow['ct'], $matchTokenRow['et']);
         // die();
 
-        if ($matchTokenRow['status'] != true) 
+        if ($matchTokenRow['status'] != true || $matchTokenRow['status'] == "" ) 
         {
             return redirect()->route('token.wrongToken');
         }
@@ -104,17 +105,38 @@ class GearOilAuthApi
         // echo $tokCrt."tokcreate<br>";
         // echo $tokExp."tokExp<br>";
 
+        date_default_timezone_set('Asia/Dhaka');
+
+        // $cdt = new DateTime();
+        // $tokExp    = new DateTime($tokExp);
 
 
-        if ( ($cdt < $tokExp && $cdt > $tokCrt) || ($cdt < $tokExp && $cdt < $tokCrt)) 
+//         $mydate = "02/27/2012";
+// echo $todaysdate=date("m/d/Y");
+
+// if ($tokExp > $cdt)
+// {
+// echo "Equal or Later<br>";
+// }
+// else
+// {
+// echo "Not Equal and Not Later<br>";
+// }
+
+
+
+
+        // if ( ($cdt < $tokExp && $cdt > $tokCrt) || ($cdt < $tokExp && $cdt < $tokCrt)) 
+        // {
+        if ( $tokExp > $cdt) 
         {
             // echo "false na";
           return true;
         } 
         else 
         {
-                        // echo "falsde";
-
+                        // echo "false";
+// 
           return false;
         }
         

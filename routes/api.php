@@ -33,6 +33,15 @@ Route::group(['middleware' => ['GearOilAuthApi']], function () {
     //Delete Service
     Route::post('/service-delete/{id}', 'UserController@deleteService')->name('user.deleteService');
 
+
+    // Route::group(['prefix'=>'the-members'],function(){
+
+    // });
+
+    Route::resources([
+        'members' => 'MemberController',
+    ]);
+
 });
 
 
