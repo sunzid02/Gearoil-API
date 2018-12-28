@@ -64,7 +64,7 @@ class TokenController extends Controller
           $startTime =  date('y-m-d h:i:s');
           // date_default_timezone_set('Asia/Dhaka');
 
-          $endTime = date("y-m-d h:i:s", strtotime('+1 hours'));
+          $endTime = date("y-m-d h:i:s", strtotime('+10 hours'));
 
           //inserting to Database  table
           $at = new All_token();
