@@ -350,69 +350,141 @@ class UserController extends Controller
     $serviceTime = $request->serviceTime;
     $shopLocation = $request->shopLocation;
 
-    $serviceData = DB::table('temporary_user_services')
+
+      $validator = Validator::make($request->all(), [
+          'memberId' => 'required | max:30| min:1',
+          'serviceId' => 'required | max:30| min:1',
+          'shopName' => 'max:30 | required | min: 2',
+          'serviceName' => 'max:90 | required',
+          'serviceAmount' => ['required', 'regex:/^[1-9][0-9]+|not_in:0/', 'max:5', 'min:2'],
+          'shopRatingByUser' => ['required','max:5', 'min:1'],
+          'shopReviewByUser' => 'max:250 | required',
+          'serviceTime' => 'max:30 | required| date',
+          'shopLocation' => 'max:100 | required| min: 3',
+      ]);
+
+      if($validator->fails())
+      {
+          $data['status'] = '400';
+          $data['message'] = "invalid input found, pass the data with desire format";
+          $data['data'] =  $validator->errors();
+      }
+      else 
+      {
+        $validUser = $this->validUser($memberId);
+
+        if ($validUser == true) // jodi user valid hoy
+        {   
+          // SELECT * FROM `temporary_user_services` WHERE `temporary_user_services_id` = '10'
+          $validServiceId = DB::table('temporary_user_services')
                             ->where('temporary_user_services_id','=',$serviceId)
                             ->get();
 
+          $validServiceIdCount = count($validServiceId);            
+          if ($validServiceIdCount > 0) 
+          {
+            $serviceData = DB::table('temporary_user_services')
+              ->where('temporary_user_services_id','=',$serviceId)
+              ->get();
 
-    foreach ($serviceData as $key)
-    {
-      $perviousServiceAmount = $key->service_amount;
-    }
 
-    $userYearlyExpenditureMember = Member::where('member_id', $memberId)->get();
-    foreach ($userYearlyExpenditureMember as $key)
-    {
-      $yearlyCost = $key->user_yearly_expenditure;
-    }
+            foreach ($serviceData as $key)
+            {
+              $perviousServiceAmount = $key->service_amount;
+            }
 
-    //update  temporary_user_services table
-      $updateTust = DB::table('temporary_user_services')
-                      ->where('temporary_user_services_id','=',$serviceId)
-                      ->update([
-                                'member_id' => $memberId,
-                                'shop_name' => $shopName,
-                                'service_name' => $serviceName,
-                                'service_amount' => $serviceAmount,
-                                'shop_rating_by_user' => $shopRating,
-                                'shop_review_by_user' => $shopReviewByUser,
-                                'service_date_time' => $serviceTime,
-                                'shop_location' => $shopLocation,
-                              ]);
+            $userYearlyExpenditureMember = Member::where('member_id', $memberId)->get();
+            foreach ($userYearlyExpenditureMember as $key)
+            {
+              $yearlyCost = $key->user_yearly_expenditure;
+            }
 
-      //update memberTable
-      if ($serviceAmount < $perviousServiceAmount)
-      {
-        $extraAmount = $perviousServiceAmount - $serviceAmount;
-        $updatedYearlyAmount = $yearlyCost - $extraAmount;
+            //update  temporary_user_services table
+              $updateTust = DB::table('temporary_user_services')
+                              ->where('temporary_user_services_id','=',$serviceId)
+                              ->update([
+                                        'member_id' => $memberId,
+                                        'shop_name' => $shopName,
+                                        'service_name' => $serviceName,
+                                        'service_amount' => $serviceAmount,
+                                        'shop_rating_by_user' => $shopRating,
+                                        'shop_review_by_user' => $shopReviewByUser,
+                                        'service_date_time' => $serviceTime,
+                                        'shop_location' => $shopLocation,
+                                      ]);
 
-        $umt = DB::table('members')
-                        ->where('member_id','=',$memberId)
-                        ->update(['user_yearly_expenditure' => $updatedYearlyAmount]);
+              //update memberTable
+              if ($serviceAmount < $perviousServiceAmount)
+              {
+                $extraAmount = $perviousServiceAmount - $serviceAmount;
+                $updatedYearlyAmount = $yearlyCost - $extraAmount;
+
+                $umt = DB::table('members')
+                                ->where('member_id','=',$memberId)
+                                ->update(['user_yearly_expenditure' => $updatedYearlyAmount]);
+              }
+              else
+              {
+                $extraAmount = $serviceAmount - $perviousServiceAmount;
+                $updatedYearlyAmount = $yearlyCost + $extraAmount;
+
+                $umt = DB::table('members')
+                                ->where('member_id','=',$memberId)
+                                ->update(['user_yearly_expenditure' => $updatedYearlyAmount]);
+              }
+
+
+            //response
+            // umt = update member table
+            if ($umt == 1 && $updateTust == 1)
+            {
+              $data['status'] = 200;
+              $data['message'] = "service updated successfully";
+            }
+            else
+            {
+              $data['status'] = 400;
+              $data['message'] = "service update failed, Please try again later";
+            }
+          } 
+          else 
+          {
+            $data['status'] = 400;
+            $data['message'] = "wrong service id provided";
+          }
+          
+        }
+        else
+        {
+          $data['status'] = '400';
+          $data['message'] = "user not found";
+        }
       }
-      else
-      {
-        $extraAmount = $serviceAmount - $perviousServiceAmount;
-        $updatedYearlyAmount = $yearlyCost + $extraAmount;
-
-        $umt = DB::table('members')
-                        ->where('member_id','=',$memberId)
-                        ->update(['user_yearly_expenditure' => $updatedYearlyAmount]);
-      }
 
 
-      //response
-      // umt = update member table
-      if ($umt == 1 && $updateTust == 1)
-      {
-        $data['status'] = 200;
-        $data['message'] = "service updated successfully";
-      }
-      else
-      {
-        $data['status'] = 300;
-        $data['message'] = "service update failed, Please try again later";
-      }
+      //................insert details to Api_log starts......................................
+
+            $params = array(
+                        'memberId' => $memberId,
+                        'shopName' => $shopName,
+                        'serviceName' => $serviceName,
+                        'shopRatingByUser' => $shopRating,
+                        'shopReviewByUser' => $shopReviewByUser,
+                        'serviceTime' => $serviceTime,
+                        'shopLocation' => $shopLocation,
+                        );
+
+            $requestDetails = url()->current()."?".http_build_query($params);
+            $responseDetails = response()->json($data);
+            $apiName = "updateService";
+            $apiReqType = "POST";
+            $clientIp =  $request->ip();
+            $currentUrl = $request->url();
+
+            $this->insertApiLog($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl);
+
+      //................insert details to Api_log ends......................................
+
 
       $response = json_encode($data, JSON_PRETTY_PRINT);
 
@@ -439,7 +511,7 @@ class UserController extends Controller
     }
     else
     {
-      $data['status'] = 300;
+      $data['status'] = 400;
       $data['message'] = "service not deleted, please try again";
     }
 

@@ -27,7 +27,7 @@ Route::group(['middleware' => ['GearOilAuthApi']], function () {
     Route::post('/user-servicing-cost', 'UserController@servicingCost' )->name('user.servicingCost');
 
     //update service
-    Route::post('/service-update/{serviceId}', 'UserController@updateService')->name('user.updateService');
+    Route::post('/service-update', 'UserController@updateService')->name('user.updateService');
 
 
     //Delete Service
