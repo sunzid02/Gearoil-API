@@ -46,7 +46,13 @@ class UserController extends Controller
       return true;
     }
 
-
+    public function currentDateTime()
+    {
+        date_default_timezone_set('Asia/Dhaka');
+        $currentDateTime =  date('Y-m-d h:i:s');
+        
+        return $currentDateTime;
+    }
 
     public function currentMonthCost(Request $request)
     {
@@ -79,24 +85,49 @@ class UserController extends Controller
                 ->where('a.member_id', $userId)
                 ->whereBetween('service_date_time', [$firstDateCurrentMonth, $lastDateCurrentMonth])
                 ->groupBy('a.member_id')
-                ->get();
+                ->first();
 
-                // die();
+          $totalServiceCost =   DB::table('members')
+                                ->SELECT('user_yearly_expenditure', 'member_id', 'username')
+                                ->where('member_id', $userId)
+                                ->first();    
 
-          $row = count($monthlyCostAllUsers);
 
-          if ($row > 0)
-          {
-            $data['status'] = 200;
-            $data['currentMonth'] = $currentMonthName;
-            $data['data'] = $monthlyCostAllUsers;
-          }
-          else
-          {
-            $data['status'] = 400;
-            $data['currentMonth'] = $currentMonthName;
-            $data['message'] = "no data found for this month";
-          }
+
+            $row = count($monthlyCostAllUsers);
+
+            if ($row > 0)
+            {
+              $totalServ = $totalServiceCost->user_yearly_expenditure;
+              $totC = "".$totalServ."";
+
+              $information = array(
+                      'userId' => $monthlyCostAllUsers->member_id, 
+                      'username' => $monthlyCostAllUsers->username, 
+                      'currentMonthName' => $currentMonthName, 
+                      'totalServicingCost' => $totC,
+                      'currentMonthCost' => $monthlyCostAllUsers->monthly_cost, 
+                    );
+              $data['status'] = 200;
+              $data['currentMonth'] = $currentMonthName;
+              $data['data'] = $information;
+            }
+            else
+            {
+              $totalServ = $totalServiceCost->user_yearly_expenditure;
+              $totC = "".$totalServ."";
+              $information = array(
+                'userId' => $totalServiceCost->member_id, 
+                'username' => $totalServiceCost->username, 
+                'currentMonthName' => $currentMonthName, 
+                'totalServicingCost' => $totC ,
+                'currentMonthCost' => "0.00", 
+              );
+              $data['status'] = 400;
+              $data['currentMonth'] = $currentMonthName;
+              $data['message'] = "no data found for this month";
+              $data['data'] = $information;
+            }
           }
           else
           {
@@ -117,7 +148,6 @@ class UserController extends Controller
         $params = array(
                        'userId' => $userId,
                       );
-
         $requestDetails = url()->current()."?".http_build_query($params);
         $responseDetails = response()->json($data);
         $apiName = "currentMonthCost";
@@ -140,7 +170,7 @@ class UserController extends Controller
 
 
 
-/*.................................User Servicing insertion...............................................................................*/
+/*.................................User Servicing insertion starts...............................................................................*/
 
 // http://localhost:8000/api/user-servicing-cost?memberId=1&shopName=dulal&serviceName=Full&serviceAmount=500&shopRatingByUser=5&shopReviewByUser=CHOLE AR KI&serviceTime=2018-09-13 18:41:45&shopLocation=kollanpur
     public function servicingCost(Request $request)
@@ -206,6 +236,8 @@ class UserController extends Controller
               $tus->shop_review_by_user = $shopReviewByUser;
               $tus->service_date_time = $serviceTime;
               $tus->shop_location = $shopLocation;
+              $tus->created_at = $this->currentDateTime();
+              $tus->updated_at = $this->currentDateTime();
 
               $tusInsertion = $tus->save();
               if ($tusInsertion == 1)//if insertion is successfull
@@ -258,6 +290,9 @@ class UserController extends Controller
               $tus->shop_review_by_user = $shopReviewByUser;
               $tus->service_date_time = $serviceTime;
               $tus->shop_location = $shopLocation;
+              $tus->created_at = $this->currentDateTime();
+              $tus->updated_at = $this->currentDateTime();
+
               $tusInsertion = $tus->save();
 
               $shop = new Shop();
@@ -411,6 +446,7 @@ class UserController extends Controller
                                         'shop_review_by_user' => $shopReviewByUser,
                                         'service_date_time' => $serviceTime,
                                         'shop_location' => $shopLocation,
+                                        'updated_at' => $this->currentDateTime(),
                                       ]);
 
               //update memberTable
@@ -430,7 +466,10 @@ class UserController extends Controller
 
                 $umt = DB::table('members')
                                 ->where('member_id','=',$memberId)
-                                ->update(['user_yearly_expenditure' => $updatedYearlyAmount]);
+                                ->update([
+                                            'user_yearly_expenditure' => $updatedYearlyAmount, 
+                                            'updated_at' => $this->currentDateTime(), 
+                                         ]);
               }
 
 
