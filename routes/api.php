@@ -38,9 +38,9 @@ Route::group(['middleware' => ['GearOilAuthApi']], function () {
     Route::get('/all-service-list', 'UserController@allServiceList')->name('user.allServiceList');
 
 
-    // Route::group(['prefix'=>'the-members'],function(){
-
-    // });
+    Route::group(['prefix'=>'motorcycle'],function(){
+         Route::get('/all-motorcycle-company-list', 'MotorcycleController@allMotorCycleCompanyList')->name('motorcycle.allMotorCycleCompanyList');
+    });
 
     Route::resources([
         'members' => 'MemberController',

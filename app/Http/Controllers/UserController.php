@@ -735,7 +735,7 @@ class UserController extends Controller
         } 
         else 
         {
-          $validUser = $this->validUser($userId);
+          $validUser = $this->validUser($memberId);
 
           if ($validUser == true)
           {            
@@ -782,7 +782,7 @@ class UserController extends Controller
 
           //................insert details to Api_log ends......................................
 
-       $response = json_encode($data, JSON_PRETTY_PRINT); 
+        $response = json_encode($data, JSON_PRETTY_PRINT); 
        return $response;                    
         
     }
