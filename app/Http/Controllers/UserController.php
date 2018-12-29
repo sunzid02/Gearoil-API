@@ -717,4 +717,77 @@ class UserController extends Controller
     }
 
 
+    /**............................. All service list starts............................................ */
+
+    public function allServiceList(Request $request)
+    {
+        $userId = $request->userId;
+
+        $validator = Validator::make($request->all(), [
+          'userId' => 'required | max:30| min:1',
+        ]);
+
+        if ($validator->fails()) 
+        {
+          $data['status'] = '400';
+          $data['message'] = "invalid input found, pass the data with desire format";
+          $data['data'] =  $validator->errors();
+        } 
+        else 
+        {
+          $validUser = $this->validUser($userId);
+
+          if ($validUser == true)
+          {            
+            $serviceData = DB::table('temporary_user_services')
+                                    ->select('shop_name', 'service_name', 'service_amount', 'service_date_time')
+                                    ->where('member_id', $userId)
+                                    ->get();
+
+            $serviceDataResult = count($serviceData);
+            
+            if ($serviceDataResult > 0) 
+            {
+               $data['status'] = '200';
+               $data['message'] = "Services found";
+               $data['data'] = $serviceData;
+            } 
+            else 
+            {
+               $data['status'] = '201';
+               $data['message'] = "No Services found agaisnt you";
+            }            
+          }
+          else 
+          {
+            $data['status'] = '400';
+            $data['message'] = "user not found";
+          }
+        }
+
+        
+          //................insert details to Api_log starts......................................
+            $params = array(
+                          'userId' => $userId,
+                          );
+
+            $requestDetails = url()->current()."?".http_build_query($params);
+            $responseDetails = response()->json($data);
+            $apiName = "allServiceList";
+            $apiReqType = "GET";
+            $clientIp =  $request->ip();
+            $currentUrl = $request->url();
+
+            $this->insertApiLog($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl);
+
+          //................insert details to Api_log ends......................................
+
+       $response = json_encode($data, JSON_PRETTY_PRINT); 
+       return $response;                    
+        
+    }
+
+    /**............................. All service list ends............................................ */
+
+
 }

@@ -34,6 +34,10 @@ Route::group(['middleware' => ['GearOilAuthApi']], function () {
     Route::post('/service-delete', 'UserController@deleteService')->name('user.deleteService');
 
 
+    //service list
+    Route::get('/all-service-list', 'UserController@allServiceList')->name('user.allServiceList');
+
+
     // Route::group(['prefix'=>'the-members'],function(){
 
     // });
