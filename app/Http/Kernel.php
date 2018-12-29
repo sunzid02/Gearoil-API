@@ -45,6 +45,10 @@ class Kernel extends HttpKernel
         'GearOilAuthApi' => [
             \App\Http\Middleware\GearOilAuthApi::class,
         ],
+
+        'ValidUser' => [
+            \App\Http\Middleware\ValidUser::class,
+        ],
     ];
 
     /**

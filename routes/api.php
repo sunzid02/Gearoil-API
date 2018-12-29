@@ -43,10 +43,21 @@ Route::group(['middleware' => ['GearOilAuthApi']], function () {
     });
 
 
-    Route::group(['prefix'=>'member-bike'],function(){
-         Route::post('/store', 'MemberAndBikeController@memberBikeStore')->name('memberAndBike.memberBikeStore');
-         Route::get('/information', 'MemberAndBikeController@information')->name('memberAndBike.information');
+
+
+    Route::group(['middleware' => ['ValidUser']], function () {
+
+        Route::group(['prefix'=>'member-bike'],function(){
+            Route::post('/store', 'MemberAndBikeController@memberBikeStore')->name('memberAndBike.memberBikeStore');
+            Route::get('/information', 'MemberAndBikeController@information')->name('memberAndBike.information');
+            Route::put('/update-bike-info', 'MemberAndBikeController@updateBikeInfo')->name('memberAndBike.updateBikeInfo');
+
+        });
+
     });
+
+
+
 
     Route::resources([
         'members' => 'MemberController',
@@ -70,7 +81,9 @@ Route::get('/wrong-token', 'TokenController@wrongToken')->name('token.wrongToken
 Route::get('/expire-token', 'TokenController@expireToken')->name('token.expireToken');
 
 
-
+//invalid user
+Route::get('/invalid-user', 'InvalidController@invalidUser')->name('invalid.invalidUser');
+Route::get('/insuffinput', 'InvalidController@insuffInput')->name('invalid.insuffInput');
 
 //................insert details to Api_log starts......................................
 
