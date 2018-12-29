@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Traits\ExistTrait;
 use App\Bike;
+use App\Member;
+use App\Motorcycle_manufacturer;
 use Validator;
+use Illuminate\Support\Facades\DB;
+
 
 class MemberAndBikeController extends Controller
 {
@@ -87,5 +91,85 @@ class MemberAndBikeController extends Controller
         $response =  json_encode($data, JSON_PRETTY_PRINT);
         return $response;
        
+    }
+
+
+
+    /** Bike information of a specific user */
+
+    public function information(Request $request)
+    {
+       $userId = $request->userId;
+      
+       $validator = Validator::make($request->all(), [
+            'userId' => 'required | max:30| min:1',
+        ]);
+        
+        if($validator->fails())
+        {
+            $data['status'] = '400';
+            $data['message'] = "invalid mode found, pass the data with desire format";
+            $data['data'] =  $validator->errors();
+        }
+        else 
+        {
+            $userExist = $this->validUserExistsTrait($userId);
+
+            if ($userExist == true) 
+            {
+                // SELECT a.bike_list_id AS user_bike_id, bike_name, model_year, company_name, a.member_id
+                // FROM bikes AS a
+                // LEFT JOIN all_bike_lists AS b
+                // ON a.bike_list_id = b.bike_list_id
+                // LEFT JOIN motorcycle_manufacturers AS c
+                // ON b.manufacturer_id = c.manufacturer_id
+                // WHERE a.member_id = '4'
+                $bikeInfo = DB::table('bikes')
+                                    ->select('a.bike_list_id AS user_bike_id', 'bike_name', 'model_year', 'company_name', 'a.member_id')
+                                    ->from('bikes as a')
+                                    ->leftJoin('all_bike_lists AS b', 'a.bike_list_id', '=', 'b.bike_list_id')
+                                    ->leftJoin('motorcycle_manufacturers AS c', 'b.manufacturer_id', '=', 'c.manufacturer_id')
+                                    ->where('a.member_id', '=', $userId)
+                                    ->get();
+
+                $bikeInfoRow = count($bikeInfo);
+
+                if ($bikeInfoRow > 0) 
+                {
+                   $data['status'] = 200;
+                   $data['data'] = $bikeInfo;
+                } 
+                else 
+                {
+                    $data['status'] = 201;
+                    $data['message'] = "no data found";
+                }
+            
+            } 
+            else 
+            {
+                $data['status'] = '400';
+                $data['message'] = "user not found";
+            }            
+        }
+
+        //................insert details to Api_log starts......................................
+            $params = array(
+                            'userId' => $userId,
+                        );
+
+            $requestDetails = url()->current()."?".http_build_query($params);
+            $responseDetails = response()->json($data);
+            $apiName = "memberBikeInformation";
+            $apiReqType = "GET";
+            $clientIp =  $request->ip();
+            $currentUrl = $request->url();
+
+            $this->insertApiLogExistTrait($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl);
+
+        //................insert details to Api_log ends......................................
+
+        $response =  json_encode($data, JSON_PRETTY_PRINT);
+        return $response;
     }
 }
