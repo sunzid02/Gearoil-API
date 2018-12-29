@@ -15,6 +15,36 @@ use Validator;
 
 class MotorcycleController extends Controller
 {
+    public function insertApiLog($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl)
+    {
+      // $params = array(
+      //                'userId' => $userId,
+      //                'authenticatedId' => $authenticatedId,
+      //               );
+      //
+      // $requestDetails = url()->current()."?".http_build_query($params);
+      // $responseDetails = response()->json($data);
+      // $clientIp =  $request->ip();
+      // $currentUrl = $request->url();
+      date_default_timezone_set("Asia/Dhaka");
+      $currentDateTime = date("Y-m-d h:i:s");
+
+      $apiLog = new Api_log();
+
+
+      $apiLog->request_details = $requestDetails;
+      $apiLog->response_details = $responseDetails;
+      $apiLog->hitting_time = $currentDateTime;
+      $apiLog->request_type = $apiReqType;
+      $apiLog->client_ip = $clientIp;
+      $apiLog->api_name = $apiName;
+
+
+      $apiLog->save();
+
+      return true;
+    }
+
     /** valid user or not */
     public function validUser($id)
     {
@@ -107,6 +137,25 @@ class MotorcycleController extends Controller
             }
             
         }
+
+        //................insert details to Api_log starts......................................
+            $params = array(
+                            'userId' => $userId,
+                            'mode' => $mode,
+                            // 'manufacturerId' => $manufacturerId,
+                        );
+            $requestDetails = url()->current()."?".http_build_query($params);
+            $responseDetails = response()->json($data);
+            $apiName = "allMotorCycleCompanyList";
+            $apiReqType = "GET";
+            $clientIp =  $request->ip();
+            $currentUrl = $request->url();
+
+            $this->insertApiLog($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl);
+
+        //................insert details to Api_log ends......................................
+
+
       
       $response = json_encode($data, JSON_PRETTY_PRINT);
       return $response;

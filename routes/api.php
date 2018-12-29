@@ -42,6 +42,11 @@ Route::group(['middleware' => ['GearOilAuthApi']], function () {
          Route::get('/all-motorcycle-company-list', 'MotorcycleController@allMotorCycleCompanyList')->name('motorcycle.allMotorCycleCompanyList');
     });
 
+
+    Route::group(['prefix'=>'member-bike'],function(){
+         Route::post('/store', 'MemberAndBikeController@memberBikeStore')->name('memberAndBike.memberBikeStore');
+    });
+
     Route::resources([
         'members' => 'MemberController',
     ]);
