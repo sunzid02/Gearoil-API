@@ -267,4 +267,78 @@ class MemberAndBikeController extends Controller
         $response =  json_encode($data, JSON_PRETTY_PRINT);
         return $response;
     }
+
+
+    public function deleteBikeInfo(Request $request)
+    {
+        $userId = $request->userId;
+        $bikeDeleteId = $request->bikeDeleteId;
+
+        $validator = Validator::make($request->all(), [
+            'userId' => 'required | max:30| min:1',
+            'bikeDeleteId' => 'required | max:30| min:1',
+        ]);
+        
+        if($validator->fails())
+        {
+            $data['status'] = '400';
+            $data['message'] = "invalid mode found, pass the data with desire format";
+            $data['data'] =  $validator->errors();
+        }
+        else
+        {
+            $bike = DB::table('bikes')
+                            ->where('id', $bikeDeleteId)
+                            ->where('status', 1)
+                            ->first();
+
+            $bikeRow = count($bike);
+
+            if ($bikeRow > 0) 
+            {
+                $deactivateBike = DB::table('bikes')
+                                    ->where('id', $bikeDeleteId)
+                                    ->update([
+                                        'updated_at' => $this->currentDateTimeExistTrait(),
+                                        'status' => 0,
+                                    ]);
+
+                if ($deactivateBike == true) 
+                {
+                    $data['status'] = '200';
+                    $data['message'] = "information deleted successfully";
+                } 
+                else 
+                {
+                    $data['status'] = '500';
+                    $data['message'] = "information deleted failed, please try again later";                   
+                }                
+            }
+            else
+            {
+                $data['status'] = '400';
+                $data['message'] = "inothing to delete";            
+            }
+        }
+
+        //................insert details to Api_log starts......................................
+            $params = array(
+                            'userId' => $userId,
+                            'bikeDeleteId' => $bikeDeleteId,
+                        );
+
+            $requestDetails = url()->current()."?".http_build_query($params);
+            $responseDetails = response()->json($data);
+            $apiName = "deleteBikeInfo";
+            $apiReqType = "POST";
+            $clientIp =  $request->ip();
+            $currentUrl = $request->url();
+
+            $this->insertApiLogExistTrait($requestDetails, $responseDetails, $apiName, $apiReqType, $clientIp, $currentUrl);
+
+        //................insert details to Api_log ends......................................
+
+        $response =  json_encode($data, JSON_PRETTY_PRINT);
+        return $response;        
+    }
 }

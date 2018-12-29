@@ -47,11 +47,12 @@ Route::group(['middleware' => ['GearOilAuthApi']], function () {
 
     Route::group(['middleware' => ['ValidUser']], function () {
 
+        //member bike CRUD
         Route::group(['prefix'=>'member-bike'],function(){
             Route::post('/store', 'MemberAndBikeController@memberBikeStore')->name('memberAndBike.memberBikeStore');
             Route::get('/information', 'MemberAndBikeController@information')->name('memberAndBike.information');
             Route::put('/update-bike-info', 'MemberAndBikeController@updateBikeInfo')->name('memberAndBike.updateBikeInfo');
-
+            Route::post('/delete-bike-info', 'MemberAndBikeController@deleteBikeInfo')->name('memberAndBike.deleteBikeInfo');
         });
 
     });
