@@ -735,12 +735,12 @@ class UserController extends Controller
         } 
         else 
         {
-          $validUser = $this->validUser($memberId);
+          $validUser = $this->validUser($userId);
 
           if ($validUser == true)
           {            
             $serviceData = DB::table('temporary_user_services')
-                                    ->select('shop_name', 'service_name', 'service_amount', 'service_date_time')
+                                    ->select('temporary_user_services_id as service_id','shop_name', 'service_name', 'service_amount', 'service_date_time')
                                     ->where('member_id', $userId)
                                     ->get();
 

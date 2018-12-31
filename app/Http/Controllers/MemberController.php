@@ -175,11 +175,12 @@ class MemberController extends Controller
         $memberId = $id; 
         // `username` `email 
         $userExists = $this->validUser($memberId);
-
+        $username = $request->username;
+        $email = $request->email;
+        
         if ($userExists == true) 
         {   
-            $username = $request->username;
-            $email = $request->email;
+
 
             $validator = Validator::make($request->all(), [
                 'username' => 'required | max:30',
